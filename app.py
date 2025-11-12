@@ -80,10 +80,10 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. AI에게 응답 요청 (🚨 '참고 자료'와 함께 질문하도록 수정됨)
+# 2. AI에게 응답 요청 (🚨 '스트리밍'으로 변경)
     with st.spinner("jetcar가 생각 중... 🚙💨"):
         try:
-            # 🚨 '참고 자료'와 '질문'을 합쳐서 '오픈북 시험' 문제로 만듭니다.
+            # 🚨 final_prompt 생성 (이전과 동일)
             final_prompt = f"""
             {context}
             
@@ -144,14 +144,35 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
             8. 추천 차량이 여러대일 경우, 각 차량의 주요 특징을 간단히 비교해 주세요.
             """
 
-            # chat.send_message를 사용해야 대화 맥락이 유지됩니다.
-            response = st.session_state.chat.send_message(final_prompt)
+# 🚨 chat.send_message 대신, model.generate_content 사용
+            # 🚨 stream=True 설정이 중요합니다.
+            response_stream = st.session_state.model.generate_content(
+                final_prompt,
+                stream=True
+            )
             
-            # 3. AI 응답 저장 및 UI에 표시
-            ai_response = response.text
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            # 3. AI 응답 저장 및 UI에 표시 (🚨 스트리밍 방식으로 변경)
             with st.chat_message("assistant"):
-                st.markdown(ai_response)
-                
+                # 🚨 st.write_stream을 사용해 답변을 실시간으로 표시
+                ai_response = st.write_stream(response_stream)
+            
+            # 4. 🚨 스트리밍이 끝난 후, 전체 응답 내용을 세션에 저장
+            # (Gemini API는 채팅 기록을 자동으로 관리하므로 이 코드가 필요 없을 수 있으나,
+            # UI용 messages에는 추가해주는 것이 좋습니다.)
+            #
+            # 🚨 중요: chat.send_message가 아닌 generate_content를 썼으므로,
+            # 대화 기록을 수동으로 업데이트 해줘야 맥락이 유지됩니다.
+            
+            # 1) UI용 messages에 사용자 질문 추가 (이미 위에서 처리됨)
+            # st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            # 2) UI용 messages에 AI 답변 추가
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            
+            # 3) 🚨 Gemini 모델의 대화 '기록(history)'에도 수동 추가
+            st.session_state.chat.history.append({"role": "user", "parts": [prompt]})
+            st.session_state.chat.history.append({"role": "model", "parts": [ai_response]})
+
         except Exception as e:
             st.error(f"AI 응답 중 오류가 발생했습니다: {e}")
+
