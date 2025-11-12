@@ -73,7 +73,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- 4. 사용자 입력 및 AI 응답 처리 (v4와 동일) ---
-if prompt := st.chat_input("무엇이든 물어보세요"):
+if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가능할까? / 패밀리카 추천해줘!"):
     
     # 1. 사용자 메시지 저장 및 UI에 표시
     st.session_state.messages.append({"role": "user", "content": prompt})
