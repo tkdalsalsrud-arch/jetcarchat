@@ -14,7 +14,7 @@ except Exception as e:
     st.stop() # 오류 발생 시 앱 실행 중지
 
 # --- 2. 앱 제목 및 모델 설정 ---
-st.title("🚗 jetcar 챗봇 (v5: Excel RAG)")
+st.title("🚗 jetcar 챗봇")
 st.caption("Powered by Streamlit & Google Gemini")
 
 # 🚨 (새 기능 v5) 'Excel 참고 자료' 불러오기
@@ -47,10 +47,10 @@ try:
             
     context += "--- [참고 자료 끝] ---"
 
-    st.info("✅ 'cars_data.xlsx' (차량 정보) 로딩 완료!")
+    st.info("✅ 출고 가능 차량 로딩 완료!")
 
 except Exception as e:
-    st.error(f"🚨 'cars_data.xlsx' 파일 로딩 중 오류 발생: {e}")
+    st.error(f"🚨 출고 가능 차량 로딩 중 오류 발생: {e}")
     st.stop()
 
 
