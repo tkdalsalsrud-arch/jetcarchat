@@ -4,34 +4,40 @@ import os
 import pandas as pd # 'pandas' (CSV/Excel 리더기)
 from pathlib import Path
 
+# ⬇️⬇️⬇️ 이전 <style> 블록을 지우고 이것으로 교체! ⬇️⬇️⬇️
 st.markdown("""
 <style>
-    /* 챗 메시지 컨테이너 */
+    /* 챗 메시지 컨테이너 공통 스타일 */
     div[data-testid="chat-message-container"] {
-        border-radius: 10px; /* 둥근 모서리 */
+        border-radius: 10px;
         padding: 10px 14px;
         margin-bottom: 10px;
     }
     
-    /* 사용자(user) 메시지 - data-testid를 활용한 선택 */
+    /* [사용자 메시지] 
+    Streamlit의 'secondary' 배경색 변수를 사용합니다.
+    (라이트 모드에서는 밝은 회색, 다크 모드에서는 진한 회색)
+    */
     div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-user"]) {
-        background-color: #F0F2F6; /* 사용자는 밝은 회색 */
-        color: #333; /* 어두운 글씨 */
+        background-color: var(--secondary-background-color);
+        color: var(--text-color); /* 테마의 기본 글자색 */
     }
 
-    /* 어시스턴트(assistant) 메시지 */
+    /* [어시스턴트(AI) 메시지]
+    Streamlit의 'primary' 색상 변수를 사용합니다.
+    (config.toml에서 설정한 #4A90E2 파란색)
+    */
     div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-assistant"]) {
-        background-color: #4A90E2; /* 봇은 테마 색상(파란색) */
-        color: white; /* 흰색 글씨 */
+        background-color: var(--primary-color);
+        color: white; /* 기본 색상의 글자는 항상 흰색이 잘 보입니다 */
     }
     
     /* 채팅 입력창 (st.chat_input) 주변 여백 줄이기 */
     .stChatInputContainer {
-        padding-top: 15px !important;
+        padding-top: 15px !importa
     }
 </style>
 """, unsafe_allow_html=True)
-# ⬆️⬆️⬆️ 여기까지 ⬆️⬆️⬆️
 
 # --- 1. API 키 설정 (오직 Gemini 키 하나만!) ---
 try:
@@ -201,4 +207,5 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
                 
             except Exception as e:
                 st.error(f"AI 응답 중 오류가 발생했습니다: {e}")
+
 
