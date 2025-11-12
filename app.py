@@ -80,11 +80,10 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
     with st.chat_message("user"):
         st.markdown(prompt)
 
-# 2. AI에게 응답 요청 (🚨 '올바른' 스트리밍 방식으로 수정)
+# 2. AI에게 응답 요청 (🚨 '최종' 스트리밍 수정)
         with st.spinner("jetcar가 생각 중... 🚙💨"):
             try:
                 # 🚨 final_prompt 생성 (이전과 동일)
-                # (이 부분은 사용자님이 수정한 '기초 상식 답변' 버전 프롬프트입니다)
                 final_prompt = f"""
                 {context}
                 
@@ -147,20 +146,28 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
             10. 가격을 표시할 경우에는 가장 낮은 가격을 기준으로 안내해 주세요.
             """
 
-                # 🚨 chat.send_message를 그대로 쓰되, stream=True 추가!
+                # 1. AI에게 스트리밍 응답 요청 (이전과 동일)
                 response_stream = st.session_state.chat.send_message(
                     final_prompt,
                     stream=True
                 )
                 
-                # 3. AI 응답 저장 및 UI에 표시 (🚨 스트리밍 방식으로 변경)
+                # 2. 🚨 (핵심!) '조각(chunk)'에서 '텍스트'만 뽑아내는 번역기 함수
+                # 이 함수가 st.write_stream에 '순수 텍스트'만 전달합니다.
+                def stream_text_generator(stream):
+                    for chunk in stream:
+                        if chunk.text: # .text 속성이 있는지 확인
+                            yield chunk.text
+                        # (참고: 만약 .text가 없고 .parts[0].text만 있다면
+                        # yield chunk.parts[0].text 로 해야 하지만,
+                        # 사용자님 로그에는 .text가 있으므로 .text를 사용합니다.)
+
+                # 3. AI 응답 저장 및 UI에 표시 (🚨 '번역기' 함수 사용)
                 with st.chat_message("assistant"):
-                    # 🚨 st.write_stream을 사용해 답변을 실시간으로 표시
-                    # 이 함수는 스트리밍이 끝나면 전체 텍스트(ai_response)를 반환합니다.
-                    ai_response = st.write_stream(response_stream)
+                    # 🚨 st.write_stream에 '번역기 함수'를 통과시킨 결과를 전달
+                    ai_response = st.write_stream(stream_text_generator(response_stream))
                 
-                # 4. 🚨 UI에 표시할 메시지 목록(messages)에만 AI 응답 추가
-                # (st.session_state.chat.history는 .send_message가 자동으로 관리합니다)
+                # 4. UI용 메시지 목록(messages)에 AI 응답 추가 (이전과 동일)
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 
             except Exception as e:
