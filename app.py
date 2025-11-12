@@ -4,6 +4,35 @@ import os
 import pandas as pd # 'pandas' (CSV/Excel 리더기)
 from pathlib import Path
 
+st.markdown("""
+<style>
+    /* 챗 메시지 컨테이너 */
+    div[data-testid="chat-message-container"] {
+        border-radius: 10px; /* 둥근 모서리 */
+        padding: 10px 14px;
+        margin-bottom: 10px;
+    }
+    
+    /* 사용자(user) 메시지 - data-testid를 활용한 선택 */
+    div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-user"]) {
+        background-color: #F0F2F6; /* 사용자는 밝은 회색 */
+        color: #333; /* 어두운 글씨 */
+    }
+
+    /* 어시스턴트(assistant) 메시지 */
+    div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-assistant"]) {
+        background-color: #4A90E2; /* 봇은 테마 색상(파란색) */
+        color: white; /* 흰색 글씨 */
+    }
+    
+    /* 채팅 입력창 (st.chat_input) 주변 여백 줄이기 */
+    .stChatInputContainer {
+        padding-top: 15px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+# ⬆️⬆️⬆️ 여기까지 ⬆️⬆️⬆️
+
 # --- 1. API 키 설정 (오직 Gemini 키 하나만!) ---
 try:
     # Secrets에서 API 키 불러오기
