@@ -30,7 +30,7 @@ try:
     df = pd.read_excel(context_file, engine="openpyxl")
     
     # '참고 자료'를 LLM이 이해하기 쉬운 텍스트로 변환
-    context = "--- [jetcar 참고 자료] ---\n\n"
+    context = "--- [jetcar 출고 가능 리스트] ---\n\n"
     
     # CSV 버전(v4)과 동일: 모든 열 제목을 가져옵니다.
     column_headers = df.columns.tolist() 
