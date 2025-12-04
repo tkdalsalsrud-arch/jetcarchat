@@ -1,97 +1,144 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import pandas as pd # 'pandas' (CSV/Excel 리더기)
+import pandas as pd
 from pathlib import Path
 
-# --- 1. API 키 설정 (오직 Gemini 키 하나만!) ---
+# --- 0. 페이지 설정 및 스타일 ---
+st.set_page_config(page_title="JETCAR 챗봇", page_icon="🚗")
+
+st.markdown("""
+<style>
+    /* 챗 메시지 컨테이너 */
+    div[data-testid="chat-message-container"] {
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+    }
+    
+    /* 사용자(user) 메시지 */
+    div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-user"]) {
+        background-color: #F0F2F6;
+        color: #333;
+    }
+
+    /* 어시스턴트(assistant) 메시지 */
+    div[data-testid="chat-message-container"]:has(div[data-testid="stChatMessageContent-assistant"]) {
+        background-color: #4A90E2;
+        color: white;
+    }
+    
+    /* 채팅 입력창 주변 여백 줄이기 */
+    .stChatInputContainer {
+        padding-top: 15px !important;
+    }
+    
+    /* 입력 필드 스타일 (Expander 내부) */
+    div[data-testid="stExpander"] {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 1. API 키 설정 ---
 try:
-    # Secrets에서 API 키 불러오기
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 except Exception as e:
-    # 로컬 secrets.toml 파일이 없거나 키가 잘못되었을 때
-    st.error("🚨 [Gemini API 키]를 설정하는 데 실패했습니다. Secrets를 확인하세요.")
-    st.stop() # 오류 발생 시 앱 실행 중지
+    st.error("🚨 [Gemini API 키] 설정을 확인하세요.")
+    st.stop()
 
-# --- 2. 앱 제목 및 모델 설정 ---
-st.title("🚗 jetcar 챗봇")
-st.caption("Powered by Streamlit & Google Gemini")
+# --- 2. 앱 제목 ---
+st.title("🚗 jetcar 맞춤형 챗봇")
+st.caption("고객님의 상황에 딱 맞는 장기렌트카를 추천해 드립니다.")
 
-# 🚨 (새 기능 v5) 'Excel 참고 자료' 불러오기
+# --- 3. [NEW] 고객 정보 입력 패널 (조건 설정) ---
+# 채팅창 위에 조건을 설정하는 구역을 만듭니다.
+with st.expander("📝 고객 맞춤 조건 설정 (여기를 눌러 정보를 입력하세요)", expanded=True):
+    st.info("아래 정보를 입력하시면 더 정확한 차량을 추천받을 수 있습니다!")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        user_age = st.number_input("나이 (만)", min_value=20, max_value=80, value=26, step=1, help="만 나이를 입력해주세요.")
+        user_married = st.radio("결혼 유무", ["미혼", "기혼"], horizontal=True)
+        
+    with col2:
+        user_income = st.selectbox("월 급여 구간", ["200만원 미만", "200~300만원", "300~400만원", "400~500만원", "500만원 이상"])
+        user_purpose = st.multiselect("차량 사용 용도 (복수 선택 가능)", ["출퇴근", "패밀리카", "업무용/영업용", "레저/여행/캠핑", "마트/장보기"], default=["출퇴근"])
+
+    # 입력받은 정보를 하나의 문자열로 정리 (AI에게 전달용)
+    user_profile_text = f"""
+    [현재 고객 프로필]
+    - 나이: 만 {user_age}세
+    - 결혼 유무: {user_married}
+    - 월 급여: {user_income}
+    - 사용 용도: {', '.join(user_purpose)}
+    """
+
+# --- 4. 엑셀 데이터 로딩 ---
 try:
-    # app.py와 같은 위치에 있는 'cars_data.xlsx' 파일을 읽습니다.
-    context_file = Path("cars_data.xlsx") # 🚨 .csv에서 .xlsx로 변경
+    context_file = Path("cars_data.xlsx")
     if not context_file.exists():
-        st.error("🚨 'cars_data.xlsx' 파일을 찾을 수 없습니다. app.py와 같은 위치에 만들어주세요.")
+        st.error("🚨 'cars_data.xlsx' 파일이 없습니다.")
         st.stop()
     
-    # 🚨 (수정된 부분!) pd.read_excel을 사용합니다.
-    # 엑셀 파일을 읽기 위해 'engine="openpyxl"'이 필요합니다.
     df = pd.read_excel(context_file, engine="openpyxl")
     
-    # '참고 자료'를 LLM이 이해하기 쉬운 텍스트로 변환
-    context = "--- [제트카 정보] ---\n\n"
-    
-    # CSV 버전(v4)과 동일: 모든 열 제목을 가져옵니다.
+    context = "--- [제트카 보유 차량 데이터] ---\n\n"
     column_headers = df.columns.tolist() 
 
     for index, row in df.iterrows():
-        # 첫 번째 열의 값을 '제목'처럼 사용 (예: 차량명)
         context += f"[{row[column_headers[0]]}]\n" 
-        
-        # 나머지 모든 열의 정보를 '키: 값' 쌍으로 동적 추가
-        for col_name in column_headers[1:]: # 첫 번째 열 제외
+        for col_name in column_headers[1:]:
             context += f"- {col_name}: {row[col_name]}\n"
-        
-        context += "\n" # 각 항목 사이에 줄바꿈 추가
+        context += "\n"
             
-    context += "--- [참고 자료 끝] ---"
-
-    st.info("✅ 출고 가능 차량 로딩 완료!")
+    context += "--- [차량 데이터 끝] ---"
 
 except Exception as e:
-    st.error(f"🚨 출고 가능 차량 로딩 중 오류 발생: {e}")
+    st.error(f"🚨 데이터 로딩 오류: {e}")
     st.stop()
 
-
-# 세션 상태(session_state)에 모델과 채팅 기록 초기화
+# --- 5. 세션 상태 초기화 ---
 if "model" not in st.session_state:
-    # 1.0 세대의 표준 모델
     st.session_state.model = genai.GenerativeModel('gemini-2.5-flash')
 
 if "chat" not in st.session_state:
-    # 모델의 채팅 세션 시작 (대화 기록 유지를 위함)
     st.session_state.chat = st.session_state.model.start_chat(history=[])
 
 if "messages" not in st.session_state:
-    # UI에 표시할 채팅 기록
     st.session_state.messages = []
 
-# --- 3. 이전 대화 내용 표시 ---
+# --- 6. 이전 대화 표시 ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 4. 사용자 입력 및 AI 응답 처리 (v4와 동일) ---
-if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가능할까? / 패밀리카 추천해줘!"):
+# --- 7. 채팅 입력 및 처리 ---
+# 여기가 사용자가 자유롭게 적는 공간입니다.
+if prompt := st.chat_input("예: 제 조건에 맞는 가성비 좋은 차 추천해주세요!"):
     
-    # 1. 사용자 메시지 저장 및 UI에 표시
+    # 사용자 메시지 UI 표시
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-# 2. AI에게 응답 요청 (🚨 '최종' 스트리밍 수정)
-        with st.spinner("jetcar가 생각 중... 🚙💨"):
-            try:
-                # 🚨 final_prompt 생성 (이전과 동일)
-                final_prompt = f"""
-                {context}
-                
-                [사용자 질문]
-                {prompt}
-                
-               [지시]
-            1. [사용자 질문]에 대한 답변을 **먼저** [jetcar 참고 자료]에서 찾아보세요.
+    # AI 응답 처리
+    with st.spinner("조건을 분석하여 차량을 찾는 중... 🚙💨"):
+        try:
+            # 🚨 프롬프트에 [고객 프로필]을 포함시킴
+            final_prompt = f"""
+            {context}
+            
+            {user_profile_text}
+            
+            [사용자 질문]
+            {prompt}
+            
+            [지시사항]
+                        1. [사용자 질문]에 대한 답변을 **먼저** [jetcar 참고 자료]에서 찾아보세요.
             2. 만약 [참고 자료]에 질문과 **관련된 정보(예: 특정 차량 정보)가 있다면**, 그 자료를 기반으로 정확하게 대답해 주세요.
             3. 만약 [참고 자료]에 **답이 없거나 관련성이 낮다면** (예: "장기렌트카의 장점은 무엇인가요?" 또는 "제트카 회사는 어디에 있나요?" 같은 일반 상식 및 자료 외 질문), "제가 아는 정보 중에는 없습니다."라고 말하지 **말고**, **당신의 일반 지식을 활용하여 친절하게 답변해 주세요.**
             4. 만약 사용자 질문이 차량번호(또는 차량명)만 입력하는 경우, [참고 자료]에서 그 차량을 찾아 아래 서식에 맞춰 요약해 주세요. 이 때 '이런 분들께 추천 !' 부분은 당신이 자료를 참고하여 창의적으로 직접 작성해야 합니다.
@@ -146,31 +193,20 @@ if prompt := st.chat_input("SUV차량 추천해줘! / 카니발 장기렌트 가
             10. 가격을 표시할 경우에는 가장 낮은 가격을 기준으로 안내해 주세요.
             """
 
-                # 1. AI에게 스트리밍 응답 요청 (이전과 동일)
-                response_stream = st.session_state.chat.send_message(
-                    final_prompt,
-                    stream=True
-                )
-                
-                # 2. 🚨 (핵심!) '조각(chunk)'에서 '텍스트'만 뽑아내는 번역기 함수
-                # 이 함수가 st.write_stream에 '순수 텍스트'만 전달합니다.
-                def stream_text_generator(stream):
-                    for chunk in stream:
-                        if chunk.text: # .text 속성이 있는지 확인
-                            yield chunk.text
-                        # (참고: 만약 .text가 없고 .parts[0].text만 있다면
-                        # yield chunk.parts[0].text 로 해야 하지만,
-                        # 사용자님 로그에는 .text가 있으므로 .text를 사용합니다.)
+            response_stream = st.session_state.chat.send_message(
+                final_prompt,
+                stream=True
+            )
+            
+            def stream_text_generator(stream):
+                for chunk in stream:
+                    if chunk.text:
+                        yield chunk.text
 
-                # 3. AI 응답 저장 및 UI에 표시 (🚨 '번역기' 함수 사용)
-                with st.chat_message("assistant"):
-                    # 🚨 st.write_stream에 '번역기 함수'를 통과시킨 결과를 전달
-                    ai_response = st.write_stream(stream_text_generator(response_stream))
-                
-                # 4. UI용 메시지 목록(messages)에 AI 응답 추가 (이전과 동일)
-                st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                
-            except Exception as e:
-                st.error(f"AI 응답 중 오류가 발생했습니다: {e}")
-
-
+            with st.chat_message("assistant"):
+                ai_response = st.write_stream(stream_text_generator(response_stream))
+            
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            
+        except Exception as e:
+            st.error(f"오류 발생: {e}")
