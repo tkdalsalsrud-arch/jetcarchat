@@ -87,7 +87,7 @@ except Exception as e:
 
 # --- 4. 세션 상태 초기화 ---
 if "model" not in st.session_state:
-    st.session_state.model = genai.GenerativeModel('gemini-2.5-flash')
+    st.session_state.model = genai.GenerativeModel('gemini-3.0-pro')
 
 if "chat" not in st.session_state:
     st.session_state.chat = st.session_state.model.start_chat(history=[])
@@ -232,11 +232,11 @@ if not st.session_state.form_submitted:
         
         with col3:
             # 차급 선택
-            preferred_size = st.multiselect("선호 차급 (복수 선택 가능)", ["경차/준중형", "중형", "대형", "상관없음"], default=["상관없음"])
+            preferred_size = st.multiselect("선호 차급 (복수 선택 가능)", ["경차/준중형", "중형", "대형", "상관없음"], default=[""])
         
         with col4:
             # 차종 선택
-            preferred_type = st.multiselect("선호 차종 (복수 선택 가능)", ["세단", "SUV", "RV/승합", "상관없음"], default=["상관없음"])
+            preferred_type = st.multiselect("선호 차종 (복수 선택 가능)", ["세단", "SUV", "RV/승합", "상관없음"], default=[""])
 
         st.markdown("---")
         st.markdown("### 💬 무엇을 도와드릴까요?")
