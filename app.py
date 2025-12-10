@@ -87,7 +87,7 @@ except Exception as e:
 
 # --- 4. 세션 상태 초기화 ---
 if "model" not in st.session_state:
-    st.session_state.model = genai.GenerativeModel('gemini-3.0-pro')
+    st.session_state.model = genai.GenerativeModel('gemini-2.5-flash')
 
 if "chat" not in st.session_state:
     st.session_state.chat = st.session_state.model.start_chat(history=[])
@@ -221,30 +221,28 @@ if not st.session_state.form_submitted:
             income = st.selectbox("월 급여 수준 (세후)", ["200만원 미만", "200~300만원", "300~400만원", "400~500만원", "500만원 이상"])
             purpose = st.multiselect("차량 사용 용도", ["출퇴근용", "영업/업무용", "패밀리카(가족여행)", "레저/캠핑", "장보기/마실용", "기타"])
         
-        # 기타 용도 입력 (조건부 표시가 안되므로 항상 표시하되 설명 추가)
+        # 기타 용도 입력
         custom_purpose = st.text_input("기타 용도 (위에서 '기타' 선택 시 작성)", placeholder="예: 낚시용, 대형견 탑승 등")
         
         st.markdown("---")
         
-        # 2. 희망 차량 정보 섹션 (새로 추가된 부분)
+        # 2. 희망 차량 정보 섹션
         st.markdown('<div class="form-header">🚘 희망 차량 정보</div>', unsafe_allow_html=True)
         col3, col4 = st.columns(2)
         
         with col3:
-            # 차급 선택
-            preferred_size = st.multiselect("선호 차급 (복수 선택 가능)", ["경차/준중형", "중형", "대형", "상관없음"], default=[""])
+            # 🚨 [수정] default 제거 -> 빈칸으로 시작 ('상관없음'은 선택지에 존재)
+            preferred_size = st.multiselect("선호 차급 (복수 선택 가능)", ["경차/준중형", "중형", "대형", "상관없음"])
         
         with col4:
-            # 차종 선택
-            preferred_type = st.multiselect("선호 차종 (복수 선택 가능)", ["세단", "SUV", "RV/승합", "상관없음"], default=[""])
+            # 🚨 [수정] default 제거 -> 빈칸으로 시작
+            preferred_type = st.multiselect("선호 차종 (복수 선택 가능)", ["세단", "SUV", "RV/승합", "상관없음"])
 
         st.markdown("---")
         st.markdown("### 💬 무엇을 도와드릴까요?")
         
-        # 질문 입력칸 (선택 사항)
         initial_query = st.text_area("궁금한 점이 있다면 적어주세요 (빈칸으로 두시면 입력한 정보에 맞춰 추천해 드립니다!)", height=80)
         
-        # 버튼 영역 분할
         btn_col1, btn_col2 = st.columns(2)
         
         with btn_col1:
@@ -257,12 +255,11 @@ if not st.session_state.form_submitted:
         if submit_with_info:
             # 1. 정보 입력 모드
             
-            # 용도 처리
             final_purpose_list = purpose
             if custom_purpose.strip():
                 final_purpose_list.append(f"추가용도: {custom_purpose}")
             
-            # 리스트가 비어있으면 '선택 안함' 처리
+            # 🚨 [수정] 리스트가 비어있으면(선택 안 했으면) 자동으로 '상관없음'으로 처리
             size_str = ", ".join(preferred_size) if preferred_size else "상관없음"
             type_str = ", ".join(preferred_type) if preferred_type else "상관없음"
 
@@ -277,7 +274,6 @@ if not st.session_state.form_submitted:
             st.session_state.user_profile = profile_text
             st.session_state.form_submitted = True
             
-            # 질문이 없으면 자동 추천 요청
             if initial_query.strip():
                 st.session_state.first_query = initial_query
             else:
@@ -307,7 +303,7 @@ else:
     # 2. (폼에서 넘어온) 첫 번째 질문이 있다면 처리
     if "first_query" in st.session_state:
         query = st.session_state.first_query
-        del st.session_state.first_query # 한 번 실행 후 삭제
+        del st.session_state.first_query 
         generate_ai_response(query)
 
     # 3. 채팅 입력창 활성화
