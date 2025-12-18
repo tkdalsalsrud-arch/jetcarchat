@@ -87,7 +87,7 @@ except Exception as e:
 
 # --- 4. 세션 상태 초기화 ---
 if "model" not in st.session_state:
-    st.session_state.model = genai.GenerativeModel('gemini-2.5-flash-lite')
+    st.session_state.model = genai.GenerativeModel('gemini-2.5-flash')
 
 if "chat" not in st.session_state:
     st.session_state.chat = st.session_state.model.start_chat(history=[])
@@ -309,4 +309,5 @@ else:
     # 3. 채팅 입력창 활성화
     if prompt := st.chat_input("추가로 궁금한 점이 있으신가요?"):
         generate_ai_response(prompt)
+
 
