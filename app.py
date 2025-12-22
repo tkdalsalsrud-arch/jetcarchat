@@ -99,7 +99,7 @@ def generate_ai_response(user_input):
                    홈페이지 방문 : https://www.jetcar.co.kr/
                 """
                 
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 response = model.generate_content(f"{system_prompt}\n\n직원 질문: {user_input}")
                 
                 ai_response = response.text
