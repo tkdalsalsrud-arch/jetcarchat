@@ -72,7 +72,7 @@ def generate_ai_response(user_input):
                 2. 3단 키워드 조합 규칙:
                    - 분류1 (조건): {KEYWORDS_CONDITION} 중 선택. (주행거리 30KM 이하 신차급 차량은 '중고차' 단어 포함 키워드 선택 금지)
                    - 분류2 (지역/사업자): {KEYWORDS_LOCATION_BIZ} 중 선택.
-                   - 분류3 (모델): 차량명에서 {CAR_MODELS} 중 일치하는 모델 추출 후 '모델명장기렌트'로 표기.
+                   - 분류3 (모델): 차량명에서 {CAR_MODELS} 중 일치하는 모델 추출 후 '모델명장기렌트카'로 표기.
 
                 3. 렌트비용 안내 (데이터 기반 가변 출력):
                    - 엑셀 데이터에서 해당 차량의 모든 개월수와 금액 컬럼을 찾아 한 줄씩 표시하세요.
@@ -120,4 +120,5 @@ for msg in st.session_state.messages:
 
 if prompt := st.chat_input("차량명이나 번호를 입력하세요."):
     generate_ai_response(prompt)
+
 
