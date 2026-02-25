@@ -101,6 +101,8 @@ def generate_ai_response(user_input):
                    📞 상담문의
                    카톡상담 : 카카오톡에 'JETCAR' 를 검색해주세요
                    홈페이지 방문 : https://www.jetcar.co.kr/
+
+                5. 상세서식예시에서 각내용 줄바꿈 잘해야합니다.
                 """
                 
                 # 모델명은 실제 사용 가능한 gemini-1.5-flash 등을 권장합니다.
@@ -120,5 +122,6 @@ for msg in st.session_state.messages:
 
 if prompt := st.chat_input("차량명이나 번호를 입력하세요."):
     generate_ai_response(prompt)
+
 
 
