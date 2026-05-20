@@ -106,7 +106,7 @@ def generate_ai_response(user_input):
                 """
                 
                 # 모델명은 실제 사용 가능한 gemini-1.5-flash 등을 권장합니다.
-                model = genai.GenerativeModel('gemini-2.5-flash')
+                model = genai.GenerativeModel('gemini-3.1-flash-lite')
                 response = model.generate_content(f"{system_prompt}\n\n직원 질문: {user_input}")
                 
                 ai_response = response.text
